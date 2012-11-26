@@ -58,6 +58,19 @@
         hedgehog.y = 300;
         hedgehog.width = 384;
         hedgehog.height = 288;
+        hedgehog.onTouchStart = function (){
+          this.isDragging = true;
+        }
+        hedgehog.onTouchMove = function(pX, pY){
+          if (this.isDragging) {
+            this.x = pX - this.width/2.0;
+            if (pY > 400) {this.y = pY - this.height/2.0};
+          }
+        }
+        hedgehog.onTouchEnd = function (){
+          this.isDragging = false;
+        }
+
         layers[1].push(hedgehog);
 
         var bird = new Object;
@@ -199,37 +212,70 @@
 
       function touchStart (event)
       {
+
+        event.preventDefault();
+
+        var touch = event.changedTouches[0];
+
+        logEventName = "event " + event.type;
+        logEventX = "touch.pageX = " + touch.pageX;
+        logEventY = "touch.pageY = " + touch.pageY;
+
+
         for (var i=layers.length-1; i>=0; i--){
           for (var j=0; j<layers[i].length; j++){
             var sprite = layers[i][j];
             if (sprite.onTouchStart) {
-              if (pointOnSprite(event.x, event.y, sprite)) {
+              if (pointOnSprite(touch.pageX, touch.pageY, sprite)) {
                 sprite.onTouchStart();
                 return;
               }
             };
           }
         } 
-
-          logEventName = "event " + event.type;
-          logEventX = "x = " + event.x;
-          logEventY = "y = " + event.y;
       }
 
 
       function touchMove (event)
       {
-          logEventName = "event " + event.type;
-          logEventX = "x = " + event.x;
-          logEventY = "y = " + event.y;
+        event.preventDefault();
+
+        var touch = event.changedTouches[0];
+
+        logEventName = "event " + event.type;
+        logEventX = "touch.pageX = " + touch.pageX;
+        logEventY = "touch.pageY = " + touch.pageY;
+
+        for (var i=layers.length-1; i>=0; i--){
+          for (var j=0; j<layers[i].length; j++){
+            var sprite = layers[i][j];
+            if (sprite.onTouchMove) {
+              if (pointOnSprite(touch.pageX, touch.pageY, sprite)) {
+                sprite.onTouchMove(touch.pageX, touch.pageY);
+                return;
+              }
+            };
+          }
+        } 
       }
 
 
       function touchEnd (event)
       {
-          logEventName = "event " + event.type;
-          logEventX = "x = " + event.x;
-          logEventY = "y = " + event.y;
+        event.preventDefault();
+
+        logEventName = "event " + event.type;
+        logEventX = "touch.pageX = " + touch.pageX;
+        logEventY = "touch.pageY = " + touch.pageY;
+
+        for (var i=layers.length-1; i>=0; i--){
+          for (var j=0; j<layers[i].length; j++){
+            var sprite = layers[i][j];
+            if (sprite.onTouchEnd) {
+                sprite.onTouchEnd();
+            }
+          };
+        }
       }
 
 
@@ -275,15 +321,38 @@
         var canvas = document.getElementById("myCanvas");
         var context = canvas.getContext("2d");
 
-        // // update stage
-        // skyImage.offsetX += skyImage.speed;
-        // if (skyImage.offsetX > canvas.width) {skyImage.offsetX -= canvas.width};
+        skyImage.speed = earthNearImage.speed = earthFarImage.speed = 0;
+        if (accelerationY < -1.0) {
+          skyImage.speed = -1.0;
+          earthFarImage.speed = -2.0;
+          earthNearImage.speed = -3.0;
+        } else if (accelerationY > 1.0) {
+          skyImage.speed = 1.0;
+          earthFarImage.speed = 2.0;
+          earthNearImage.speed = 3.0;
+        }
 
-        // earthFarImage.offsetX += earthFarImage.speed;
-        // if (earthFarImage.offsetX > canvas.width) {earthFarImage.offsetX -= canvas.width};
+        // update stage
+        skyImage.offsetX += skyImage.speed;
+        if (skyImage.offsetX > canvas.width) {
+          skyImage.offsetX -= canvas.width;
+        } else if (skyImage.offsetX < 0) {
+          skyImage.offsetX += canvas.width;
+        }
 
-        // earthNearImage.offsetX += earthNearImage.speed;
-        // if (earthNearImage.offsetX > canvas.width) {earthNearImage.offsetX -= canvas.width};
+        earthFarImage.offsetX += earthFarImage.speed;
+        if (earthFarImage.offsetX > canvas.width) 
+          {earthFarImage.offsetX -= canvas.width;
+        } else if (earthFarImage.offsetX < 0) {
+          earthFarImage.offsetX += canvas.width;
+        }
+        
+        earthNearImage.offsetX += earthNearImage.speed;
+        if (earthNearImage.offsetX > canvas.width) {
+          earthNearImage.offsetX -= canvas.width;
+        } else if (earthNearImage.offsetX < 0){
+          earthNearImage.offsetX += canvas.width;
+        }
 
         //individual updates
         for (var i=0; i<layers.length; i++){
@@ -408,8 +477,9 @@
           }
         }
 
-        context.fillText("sun_lights.x = " + layers[0][1].x, 200, 30);
-        context.fillText("sun_lights.y = " + layers[0][1].y, 200, 40);
+        // context.fillText("accelerationX = " + accelerationX, 200, 30);
+        // context.fillText("accelerationY = " + accelerationY, 200, 40);
+        // context.fillText("accelerationZ = " + accelerationZ, 200, 50);
 
         calcAndDrawFPS();
 
@@ -434,6 +504,15 @@
         loadImages();
         animate();
       };
+
+    var accelerationX;
+    var accelerationY;
+    var accelerationZ;
+    window.ondevicemotion = function(event) {  
+    accelerationX = Math.round(event.accelerationIncludingGravity.x * 100) / 100.0;  
+    accelerationY = Math.round(event.accelerationIncludingGravity.y * 100) / 100.0;
+    accelerationZ = Math.round(event.accelerationIncludingGravity.z * 100) / 100.0;
+}
     </script>
   </body>
 </html>
